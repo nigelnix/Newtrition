@@ -3,8 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { UserContext } from "../contexts/UserContext";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-console.log(BACKEND_URL)
 function Login() {
   const navigate = useNavigate();
 
@@ -30,50 +28,52 @@ function Login() {
     event.preventDefault();
     console.log(userCreds);
 
-    fetch(`${BACKEND_URL}/login`, {
+    fetch(`/login`, {
       method: "POST",
       body: JSON.stringify(userCreds),
       headers: {
         "Content-Type": "application/json",
       },
     })
-    .then((response) => {
-      if (response.ok) {
-        return response.json(); // Parse response only if it's okay
-      } else {
-        // Handle non-OK responses
-        if (response.status === 404) {
-          setMessage({
-            type: "error",
-            text: "Username or Email doesn't exist",
-          });
-        } else if (response.status === 401) {
-          setMessage({ type: "error", text: "Incorrect Password or Email" });
+      .then((response) => {
+        if (response.ok) {
+          return response.json(); // Parse response only if it's okay
+        } else {
+          // Handle non-OK responses
+          if (response.status === 404) {
+            setMessage({
+              type: "error",
+              text: "Username or Email doesn't exist",
+            });
+          } else if (response.status === 401) {
+            setMessage({ type: "error", text: "Incorrect Password or Email" });
+          }
+
+          setTimeout(() => {
+            setMessage({ type: "invisible-msg", text: "Dummy Text" });
+          }, 5000);
+
+          throw new Error("Server responded with error status");
         }
-    
-        setTimeout(() => {
-          setMessage({ type: "invisible-msg", text: "Dummy Text" });
-        }, 5000);
-    
-        throw new Error("Server responded with error status");
-      }
-    })
-    .then((data) => {
-      // Handle successful JSON response
-      if (data.token !== undefined) {
-        localStorage.setItem("newtrition-user", JSON.stringify(data));
-        console.log(data);
-        LoggedData.setLoggedUser(data);
-    
-        navigate("/tracking");
-      }
-    })
-    .catch((err) => {
-      // Handle errors during fetch or parsing JSON
-      console.log(err);
-      setMessage({ type: "error", text: "Error occurred while fetching data" });
-    });
-    
+      })
+      .then((data) => {
+        // Handle successful JSON response
+        if (data.token !== undefined) {
+          localStorage.setItem("newtrition-user", JSON.stringify(data));
+          console.log(data);
+          LoggedData.setLoggedUser(data);
+
+          navigate("/tracking");
+        }
+      })
+      .catch((err) => {
+        // Handle errors during fetch or parsing JSON
+        console.log(err);
+        setMessage({
+          type: "error",
+          text: "Error occurred while fetching data",
+        });
+      });
   }
 
   return (

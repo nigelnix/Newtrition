@@ -5,7 +5,6 @@ import Food from "./Food";
 import Header from "./Header";
 import diet from "../assets/diet.png";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 function Tracking() {
   const loggedData = useContext(UserContext);
@@ -16,7 +15,7 @@ function Tracking() {
 
   function searchFood(event) {
     if (event.target.value.length !== 0) {
-      fetch(`${BACKEND_URL}/foods/${event.target.value}`, {
+      fetch(`/foods/${event.target.value}`, {
         method: "GET",
         headers: {
           Authorization: "Bearer " + loggedData.loggedUser.token,

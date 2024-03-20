@@ -9,12 +9,18 @@ import { userModel } from "./models/userModel.js";
 import { foodModel } from "./models/foodModel.js";
 import { trackingModel } from "./models/trackingModel.js";
 import { verifyToken } from "./verifyToken.js";
+import path from "path";
+import { fileURLToPath } from 'url';
+import moment from "moment";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const secretKey = process.env.SECRET_KEY;
 const DBurl = process.env.MONGODB_URL;
 const port = process.env.PORT || 3000;
 // initiating express for endpoints
 const app = express();
+
 
 // middleware to take care of parse and stringify and data chunking in the background with http
 app.use(express.json());
@@ -23,29 +29,31 @@ app.use(cors());
 
 // database connection
 mongoose
-  .connect(DBurl)
-  .then((req, res) => {
-    console.log("DB Connected Successfully");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+.connect(DBurl)
+.then((req, res) => {
+  console.log("DB Connected Successfully");
+})
+.catch((err) => {
+  console.log(err);
+});
 
 
-const frontend = process.env.FRONTEND_URL;
-console.log("Frontend URL:", frontend);
+// const frontend = process.env.FRONTEND_URL;
+// console.log("Frontend URL:", frontend);
 
 // endpoint for registering new user
-app.post(`${frontend}/register`, (req, res) => {
+app.post(`/register`, (req, res) => {
   let user = req.body;
-
+  
   bcrypt.genSalt(10, (err, salt) => {
     if (!err) {
       bcrypt.hash(user.password, salt, async (err, hashPass) => {
         if (!err) {
           user.password = hashPass;
-
+          
           try {
+            console.log("User data to be saved:", user);
+
             let doc = await userModel.create(user);
             res.status(201).send({ message: "User registered" });
           } catch (err) {
@@ -59,9 +67,9 @@ app.post(`${frontend}/register`, (req, res) => {
 });
 
 // endpoint for login
-app.post(`${frontend}/login`, async (req, res) => {
+app.post(`/login`, async (req, res) => {
   let userCred = req.body;
-
+  
   try {
     const user = await userModel.findOne({ email: userCred.email });
     if (user !== null) {
@@ -92,7 +100,7 @@ app.post(`${frontend}/login`, async (req, res) => {
 });
 
 // endpoint to fetch all foods
-app.get(`${frontend}/foods`, verifyToken, async (req, res) => {
+app.get(`/foods`, verifyToken, async (req, res) => {
   try {
     let foods = await foodModel.find();
     res.send(foods);
@@ -103,9 +111,9 @@ app.get(`${frontend}/foods`, verifyToken, async (req, res) => {
 });
 
 // endpoint to add a food item
-app.post(`${frontend}/foods`, verifyToken, async (req, res) => {
+app.post(`/foods`, verifyToken, async (req, res) => {
   let food = req.body;
-
+  
   try {
     let doc = await foodModel.create(food);
     res.status(201).send({ message: "Food Added to DB" });
@@ -116,7 +124,7 @@ app.post(`${frontend}/foods`, verifyToken, async (req, res) => {
 });
 
 // endpoint search food by name
-app.get(`${frontend}/foods/:name`, verifyToken, async (req, res) => {
+app.get(`/foods/:name`, verifyToken, async (req, res) => {
   try {
     // $regex makes a wider relative search returning all similar search results and 'i' makes the search case insensitive
     let foods = await foodModel.find({
@@ -134,7 +142,7 @@ app.get(`${frontend}/foods/:name`, verifyToken, async (req, res) => {
 });
 
 // endpoint for tracking food + quantity
-app.post(`${frontend}/tracking`, verifyToken, async (req, res) => {
+app.post(`/tracking`, verifyToken, async (req, res) => {
   let trackData = req.body;
   try {
     let data = await trackingModel.create(trackData);
@@ -147,44 +155,26 @@ app.post(`${frontend}/tracking`, verifyToken, async (req, res) => {
 });
 
 // endpoint to fetch all foods eaten by a person
-// endpoint to fetch all foods eaten by a person
 
-app.get(`${frontend}/tracking/:userid/:date`, async (req, res) => {
+app.get(`/tracking/:userid/:date`, async (req, res) => {
   let userid = req.params.userid;
-  let date = new Date(req.params.date);
-  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-
-  // Format the date with leading zeros using toLocaleDateString
-  let strDate = date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-
+  let date = moment.utc(req.params.date, "YYYY-MM-DD").startOf('day'); // Convert to UTC and start of day
+  console.log("Date sent to backend", date)
   try {
     let foods = await trackingModel
-      .find({ userId: userid, eatenDate: strDate })
+      .find({ userId: userid, eatenDate: date })
       .populate("userId")
       .populate("foodId");
     res.send(foods);
-
-    console.log(
-      "UserID: ",
-      userid,
-      "Raw Date: ",
-      date,
-      "Formatted Date: ",
-      strDate,
-      "Formatted Foods: ",
-      foods
-    );
   } catch (err) {
     console.log(err);
     res.status(500).send({ message: "Some Problem in getting the food" });
   }
 });
-
-// starting the server
-app.listen(port, () => {
-  console.log(`Server up and running on port: ${port}`);
-});
+  
+  app.use(express.static(path.join(__dirname, "dist")));
+  // starting the server
+  app.listen(port, () => {
+    console.log(`Server up and running on port: ${port}`);
+  });
+  

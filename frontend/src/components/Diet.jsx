@@ -4,40 +4,32 @@ import { useContext } from "react";
 import Header from "./Header";
 import shrug from "../assets/shrug.png";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-function Diet() {
-  let loggedData = useContext(UserContext);
 
-  const [items, setItems] = useState([]);
-  const [date, setDate] = useState(new Date());
-  const [eatenDate, setEatenDate] = useState("");
 
-  let [total, setTotal] = useState({
-    totalCalories: 0,
-    totalProtein: 0,
-    totalcarbs: 0,
-    totalFat: 0,
-    totalFibre: 0,
-  });
+  const Diet = () => {
+    let loggedData = useContext(UserContext);
+    const [date, setDate] = useState(new Date());
+    const [items, setItems] = useState([]);
+    const [total, setTotal] = useState({ calories: 0, protein: 0, carbohydrates: 0, fat: 0, fibre: 0 });
+    const [eatenDate, setEatenDate] = useState("");
+   
+  
+    const formatDate = (dateObj) => {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0"); // Add leading zero for single-digit months
+      const day = String(dateObj.getDate()).padStart(2, "0"); // Add leading zero for single-digit days
+      return `${year}-${month}-${day}`;
+    };
 
-  function formatNumberWithLeadingZero(number) {
-    return number < 10 ? `0${number}` : number;
-  }
+   useEffect(() => {
+    const formattedDate = formatDate(date);
 
-  useEffect(() => {
-    const adjustedDate = new Date(date);
-    adjustedDate.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-
-    const formattedMonth = formatNumberWithLeadingZero(
-      adjustedDate.getMonth() + 1
-    );
-    const formattedDay = formatNumberWithLeadingZero(adjustedDate.getDate());
 
     fetch(
-      `${BACKEND_URL}/tracking/${
+      `/tracking/${
         loggedData.loggedUser.userid
-      }/${formattedMonth}-${formattedDay}-${adjustedDate.getFullYear()}`,
+      }/${formattedDate}`,
       {
         method: "GET",
         headers: {
@@ -51,7 +43,7 @@ function Diet() {
         setItems(data);
 
         if (data && data.length > 0) {
-          setEatenDate(data[0].eatenDate);
+          setEatenDate(formattedDate);
         }
       })
       .catch((err) => {
@@ -92,7 +84,15 @@ function Diet() {
           type="date"
           className="mt-1 w-full h-6 indent-3 text-base rounded-lg text-gray-500 focus:text-gray-900"
           onChange={(event) => {
-            setDate(new Date(event.target.value));
+            const selectedDate = event.target.value;
+  const adjustedDate = new Date(selectedDate);
+  const formattedDay = adjustedDate.getDate().toString().padStart(2, '0'); // Ensure two digits for day
+  const formattedMonth = (adjustedDate.getMonth() + 1).toString().padStart(2, '0'); // Ensure two digits for month
+  const formattedYear = adjustedDate.getFullYear();
+  const formattedDate = `${formattedDay}/${formattedMonth}/${formattedYear}`;
+  console.log("Selected Date (before conversion):", selectedDate);
+  console.log("Converted Date (after conversion):", formattedDate);
+  setDate(formattedDate); // Set the formatted date to state
           }}
         />
 
