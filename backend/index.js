@@ -156,21 +156,29 @@ app.post(`/tracking`, verifyToken, async (req, res) => {
 
 // endpoint to fetch all foods eaten by a person
 
-app.get(`/tracking/:userid/:date`, async (req, res) => {
+app.get("/tracking/:userid/:date", async (req, res) => {
   let userid = req.params.userid;
-  let date = moment.utc(req.params.date, "YYYY-MM-DD").startOf('day'); // Convert to UTC and start of day
-  console.log("Date sent to backend", date)
+  let date = new Date(req.params.date);
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+
+  // Format the date with leading zeros using toLocaleDateString
+  let strDate = date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
   try {
-    let foods = await trackingModel
-      .find({ userId: userid, eatenDate: date })
-      .populate("userId")
-      .populate("foodId");
+    let foods = await trackingModel.find({ userId: userid, eatenDate: strDate }).populate('userId').populate('foodId');
     res.send(foods);
+
+    console.log("UserID: ", userid, "Raw Date: ", date, "Formatted Date: ", strDate, "Formatted Foods: ", foods);
   } catch (err) {
     console.log(err);
     res.status(500).send({ message: "Some Problem in getting the food" });
   }
 });
+
   
   app.use(express.static(path.join(__dirname, "dist")));
   // starting the server

@@ -13,17 +13,21 @@ const trackingSchema = mongoose.Schema(
       required: true,
     },
     details:{
-       
-      calories:Number,
-      protein:Number,
-      carbohydrates:Number,
-      fat:Number,
-      fibre:Number,
-     
-  },
+      calories: Number,
+      protein: Number,
+      carbohydrates: Number,
+      fat: Number,
+      fibre: Number,
+    },
     eatenDate: {
       type: String,
-      default: new Date().toLocaleDateString(),
+      default: () => {
+        const date = new Date();
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      },
     },
     quantity: {
       type: Number,
